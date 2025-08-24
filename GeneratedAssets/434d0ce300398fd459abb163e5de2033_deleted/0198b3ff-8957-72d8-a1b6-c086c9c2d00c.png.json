@@ -1,0 +1,29 @@
+{
+    "asset": "434d0ce300398fd459abb163e5de2033",
+    "fileName": "0198b3ff-8957-72d8-a1b6-c086c9c2d00c.png",
+    "prompt": "Zombie girl",
+    "negativePrompt": "background",
+    "model": "9b847f98-16fe-455c-b321-1d137222e436",
+    "modelName": "Manga",
+    "customSeed": -1,
+    "w3CTraceId": "b03808568fd3a0d0176d4908e442ada9",
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": [
+            {
+                "doodleReferenceType": 7,
+                "doodle": [],
+                "label": "Image",
+                "strength": 0.4000000059604645,
+                "invertStrength": false,
+                "assetReferenceGuid": "5598bc0fe84fc2446ba6c9c4d9638fff"
+            }
+        ]
+    },
+    "upscaleFactor": 0
+}

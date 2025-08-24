@@ -1,0 +1,29 @@
+{
+    "asset": "434d0ce300398fd459abb163e5de2033",
+    "fileName": "0198b3ff-4d43-792c-8c2f-4b72e2093a39.png",
+    "prompt": "Zombie girl",
+    "negativePrompt": "background",
+    "model": "b7750d5b-62a0-457a-b21e-82f4c2789df5",
+    "modelName": "Hyper Casual Mobile Characters",
+    "customSeed": -1,
+    "w3CTraceId": "c7aec728ad384ae80657935e97e633d1",
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": [
+            {
+                "doodleReferenceType": 7,
+                "doodle": [],
+                "label": "Image",
+                "strength": 0.25,
+                "invertStrength": false,
+                "assetReferenceGuid": "5598bc0fe84fc2446ba6c9c4d9638fff"
+            }
+        ]
+    },
+    "upscaleFactor": 0
+}
