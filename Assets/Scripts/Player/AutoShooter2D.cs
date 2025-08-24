@@ -9,6 +9,7 @@ public class AutoShooter2D : MonoBehaviour
     [Header("Weapon nodes")]
     public Transform weaponPivot;   // Player/WeaponPivot
     public Transform muzzle;        // Player/WeaponPivot/Muzzle
+    Vector3 muzzleLocalRight;
 
     [Header("Fire (временно луч, позже пули)")]
     public float rpm = 240f;
@@ -34,6 +35,7 @@ public class AutoShooter2D : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         bodySR = GetComponent<SpriteRenderer>();
         if (weaponPivot) weaponSR = weaponPivot.GetComponent<SpriteRenderer>();
+        if (muzzle) muzzleLocalRight = muzzle.localPosition;
     }
 
     void Update()
@@ -42,7 +44,7 @@ public class AutoShooter2D : MonoBehaviour
 
         // --- 1) цель (может не быть)
         Transform target = GetNearest(Physics2D.OverlapCircleAll(transform.position, range, enemyMask));
-
+        bool hasTarget = target != null;
         // --- 2) направление прицеливания
         Vector2 aimDir;
 
@@ -64,21 +66,33 @@ public class AutoShooter2D : MonoBehaviour
                 aimDir = (bodySR && bodySR.flipX) ? Vector2.left : Vector2.right; // стоим — держим сторону тела
         }
 
-        // --- 3) точный поворот WeaponPivot + зеркалирование спрайта по Y
+       
         if (weaponPivot)
         {
-            bool left = (aimDir.x < 0f);
+            // aimDir уже посчитан выше (в сторону цели или движения)
+            Vector2 dir = (aimDir.sqrMagnitude > 0.0001f) ? aimDir.normalized : Vector2.right;
 
-            // НАКЛОН без переворота: симметрия относительно оси X
-            float baseAng = Mathf.Atan2(aimDir.y, Mathf.Abs(aimDir.x)) * Mathf.Rad2Deg + weaponAngleOffsetDeg;
-            float z = left ? -baseAng : baseAng;
+            // базовый поворот: ось +X ствола смотрит туда же, куда dir
+            Quaternion toAim = Quaternion.FromToRotation(Vector3.right, new Vector3(dir.x, dir.y, 0f));
 
-            weaponPivot.rotation = Quaternion.Euler(0f, 0f, z);
+            // если спрайт пистолета чуть "косо" нарисован — подправь градусы тут (обычно ±3..5)
+            Quaternion offset = Quaternion.Euler(0f, 0f, weaponAngleOffsetDeg);
 
+            weaponPivot.rotation = toAim * offset;
+            bool leftShoot = hasTarget && aimDir.x < 0f;
+            // на всякий случай: если кто-то случайно зафлипал спрайт руками — принудительно отключим
             if (weaponSR)
             {
-                weaponSR.flipX = false;     // никогда не трогаем flipX
-                weaponSR.flipY = left;      // только flipY даёт «влево»
+                weaponSR.flipX = false;
+                weaponSR.flipY = leftShoot;
+            }
+
+            if (muzzle)
+            {
+                var lp = muzzleLocalRight;
+                lp.x = leftShoot ? -Mathf.Abs(lp.x) : Mathf.Abs(lp.x);
+                muzzle.localPosition = lp;
+                muzzle.localRotation = Quaternion.identity; // на всякий случай
             }
         }
 

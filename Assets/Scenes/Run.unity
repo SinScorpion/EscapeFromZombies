@@ -596,11 +596,6 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
---- !u!4 &446092700 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 269861105292971381, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
-  m_PrefabInstance: {fileID: 6845694014471520112}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &662872490
 GameObject:
   m_ObjectHideFlags: 0
@@ -1060,11 +1055,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &1813862962 stripped
-SpriteRenderer:
-  m_CorrespondingSourceObject: {fileID: 1113526139434094466, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
-  m_PrefabInstance: {fileID: 6845694014471520112}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &126171001538439426
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1227,14 +1217,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 749503205642075172, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
-      propertyPath: m_ConstrainProportionsScale
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2309618948437196611, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
-      propertyPath: hp
-      value: 5
-      objectReference: {fileID: 0}
     - target: {fileID: 6256843501709727373, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
       propertyPath: m_Name
       value: Player
@@ -1279,32 +1261,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7611076824323408753, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
-      propertyPath: muzzle
-      value: 
-      objectReference: {fileID: 446092700}
-    - target: {fileID: 7611076824323408753, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
-      propertyPath: debugDraw
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7611076824323408753, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
-      propertyPath: playerSprite
-      value: 
-      objectReference: {fileID: 1813862962}
-    - target: {fileID: 7611076824323408753, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
-      propertyPath: weaponSprite
-      value: 
-      objectReference: {fileID: 6845694014471520114}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
---- !u!212 &6845694014471520114 stripped
-SpriteRenderer:
-  m_CorrespondingSourceObject: {fileID: 106786051232134257, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
-  m_PrefabInstance: {fileID: 6845694014471520112}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

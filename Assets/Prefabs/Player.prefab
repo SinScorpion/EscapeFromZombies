@@ -59,7 +59,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 3.42, y: -1.83, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 1
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 269861105292971381}
   m_Father: {fileID: 7463696602509619006}
@@ -366,15 +366,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AutoShooter2D
   range: 6
-  rpm: 240
-  damage: 1
   enemyMask:
     serializedVersion: 2
     m_Bits: 64
-  muzzleOffset: {x: 0.45, y: 0.15}
-  playerSR: {fileID: 1113526139434094466}
   weaponPivot: {fileID: 749503205642075172}
-  muzzleDistance: 0.25
+  muzzle: {fileID: 269861105292971381}
+  rpm: 240
+  damage: 1
+  aimDeadZone: 0.01
+  weaponAngleOffsetDeg: 0
+  debugDraw: 1
 --- !u!114 &2309618948437196611
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -388,7 +389,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHp: 5
-  hp: 0
+  hp: 5
 --- !u!1 &8315945369877721847
 GameObject:
   m_ObjectHideFlags: 0
