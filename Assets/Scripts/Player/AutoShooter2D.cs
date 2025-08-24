@@ -79,19 +79,18 @@ public class AutoShooter2D : MonoBehaviour
             Quaternion offset = Quaternion.Euler(0f, 0f, weaponAngleOffsetDeg);
 
             weaponPivot.rotation = toAim * offset;
-            bool leftShoot = hasTarget && aimDir.x < 0f;
+            bool left = hasTarget && aimDir.x < 0f;
+            weaponPivot.localScale = new Vector3(1f, left ? -1f : 1f, 1f);
             // на всякий случай: если кто-то случайно зафлипал спрайт руками — принудительно отключим
             if (weaponSR)
             {
                 weaponSR.flipX = false;
-                weaponSR.flipY = leftShoot;
+                // weaponSR.flipY = left;
             }
 
             if (muzzle)
             {
-                var lp = muzzleLocalRight;
-                lp.x = leftShoot ? -Mathf.Abs(lp.x) : Mathf.Abs(lp.x);
-                muzzle.localPosition = lp;
+                muzzle.localPosition = muzzleLocalRight;
                 muzzle.localRotation = Quaternion.identity; // на всякий случай
             }
         }
