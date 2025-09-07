@@ -32,6 +32,13 @@ public class AutoShooter2D : MonoBehaviour
     [Header("Debug")]
     public bool debugDraw = false;
 
+    // ------- SFX -------
+    [Header("SFX")]
+    public AudioSource sfxSource;            // перетащи сюда AudioSource с WeaponPivot
+    public AudioClip[] shotClips;            // можно 1 или несколько клипов
+    [Range(0f, 1f)] public float shotVolume = 0.85f;
+    public Vector2 pitchJitter = new Vector2(0.97f, 1.03f);
+
     private float cooldown;
     private PlayerMove2D owner;
     private Rigidbody2D rb;
@@ -44,6 +51,7 @@ public class AutoShooter2D : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         bodySR = GetComponent<SpriteRenderer>();
         if (weaponPivot) weaponSR = weaponPivot.GetComponent<SpriteRenderer>();
+        if (!sfxSource && weaponPivot) sfxSource = weaponPivot.GetComponent<AudioSource>();
         if (muzzle) muzzleLocalRight = muzzle.localPosition; // базовая «правая» локальная точка дула
     }
 
@@ -93,7 +101,7 @@ public class AutoShooter2D : MonoBehaviour
             Quaternion offset = Quaternion.Euler(0f, 0f, weaponAngleOffsetDeg);
             weaponPivot.rotation = toAim * offset;
 
-            // ВАЖНО: флип pivot'а по Y разрешаем ТОЛЬКО когда:
+            // флип pivot'а по Y разрешаем ТОЛЬКО когда:
             //   1) есть цель (идёт атака) И
             //   2) тело уже реально повернулось влево (bodySR.flipX == true)
             bool bodyLeft = bodySR ? bodySR.flipX : (faceSign < 0);
@@ -136,8 +144,10 @@ public class AutoShooter2D : MonoBehaviour
             if (b)
             {
                 b.lifeTime = bulletLifeTime;
-                b.Init(shootDir, bulletSpeed, damage, 0.5f, enemyMask, blockMask); // стан 0.5с
+                b.Init(shootDir, bulletSpeed, damage, 0.5f, enemyMask, blockMask); // стан 0.5с (подберём)
             }
+
+            PlayShotSfx(); // <<<<<<<<<<<<<< ВОТ ЗДЕСЬ ВОСПРОИЗВОДИМ ЗВУК
 
             if (debugDraw)
                 Debug.DrawLine(muzzle.position, muzzle.position + (Vector3)shootDir * 2f, Color.yellow, 0.05f);
@@ -146,6 +156,14 @@ public class AutoShooter2D : MonoBehaviour
         {
             Debug.DrawLine(muzzle.position, muzzle.position + (Vector3)weaponPivot.right * 1.5f, Color.yellow, 0.02f);
         }
+    }
+
+    private void PlayShotSfx()
+    {
+        if (!sfxSource || shotClips == null || shotClips.Length == 0) return;
+        sfxSource.pitch = Random.Range(pitchJitter.x, pitchJitter.y);
+        var clip = shotClips[Random.Range(0, shotClips.Length)];
+        sfxSource.PlayOneShot(clip, shotVolume);
     }
 
     Transform GetNearest(Collider2D[] hits)
