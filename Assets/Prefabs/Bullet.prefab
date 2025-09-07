@@ -141,7 +141,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ded4664448732a41bad24288e73511b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bullet2D
-  speed: 12
+  speed: 20
   lifeTime: 3
   damage: 1
   stunSeconds: 4.5
@@ -151,3 +151,4 @@ MonoBehaviour:
   blockMask:
     serializedVersion: 2
     m_Bits: 256
+  angleOffsetDeg: -90

@@ -7,8 +7,12 @@ public class Bullet2D : MonoBehaviour
     public float lifeTime = 2f;
     public float damage = 1f;
     public float stunSeconds = 0.5f;
-    public LayerMask hitMask;     // кого считать «целью» (Enemy)
+    public LayerMask hitMask;     // кого считаем «целью» (Enemy)
     public LayerMask blockMask;   // стены/препятствия
+
+    [Header("Visual")]
+    [Tooltip("Если спрайт пули изначально направлен не вдоль +X, укажите поправку в градусах (например, 90).")]
+    public float angleOffsetDeg = 0f;
 
     Vector2 dir;
     float t;
@@ -23,6 +27,11 @@ public class Bullet2D : MonoBehaviour
         hitMask = hit;
         blockMask = block;
         t = 0f;
+
+        // Визуально развернём пулю по направлению полёта
+        // (ось +X спрайта будет совпадать с направлением dir).
+        transform.rotation = Quaternion.FromToRotation(Vector3.right, new Vector3(dir.x, dir.y, 0f))
+                            * Quaternion.Euler(0f, 0f, angleOffsetDeg);
     }
 
     void Update()
@@ -34,7 +43,7 @@ public class Bullet2D : MonoBehaviour
         Vector2 from = transform.position;
         Vector2 to = from + dir * speed * dt;
 
-        // Пролет лучом, чтобы не проскочить тонкие коллайдеры
+        // Пролет лучом, чтобы не «проскакивать» тонкие коллайдеры.
         RaycastHit2D hit = Physics2D.Raycast(from, dir, (to - from).magnitude, hitMask | blockMask);
         if (hit.collider != null)
         {
@@ -47,7 +56,7 @@ public class Bullet2D : MonoBehaviour
                 var stun = hit.collider.GetComponentInParent<ZombieStun2D>();
                 if (stun) stun.Apply(stunSeconds);
             }
-            // В любом случае — уничтожаемся при первом столкновении
+
             Destroy(gameObject);
             return;
         }
