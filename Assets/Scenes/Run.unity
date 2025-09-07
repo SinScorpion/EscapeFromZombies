@@ -1229,6 +1229,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7611076824323408753, guid: eb6daa0ceaedeed43a0e1f65195fe0f6, type: 3}
+      propertyPath: flipHysteresisX
+      value: 0.3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

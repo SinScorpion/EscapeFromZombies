@@ -2,6 +2,9 @@
 
 public class AutoShooter2D : MonoBehaviour
 {
+    [SerializeField] private float flipHysteresisX = 0.15f; // порог по |x| для смены стороны (липкость)
+    private int faceSign = 1; // 1 = вправо, -1 = влево (липкая сторона)
+
     [Header("Targeting")]
     public float range = 6f;
     public LayerMask enemyMask;
@@ -9,31 +12,31 @@ public class AutoShooter2D : MonoBehaviour
     [Header("Weapon nodes")]
     public Transform weaponPivot;   // Player/WeaponPivot
     public Transform muzzle;        // Player/WeaponPivot/Muzzle
-    Vector3 muzzleLocalRight;
+    private Vector3 muzzleLocalRight;
 
     [Header("Fire (пули)")]
-    public GameObject bulletPrefab;       // префаб пули
-    public float rpm = 240f;              // скорострельность
+    public GameObject bulletPrefab;
+    public float rpm = 240f;
     public float damage = 1f;
     public float bulletSpeed = 12f;
     public float bulletLifeTime = 2f;
-    public float spreadDeg = 4f;          // разброс на выстрел (углы)
+    public float spreadDeg = 4f;
 
     [Header("Tuning")]
-    public float aimDeadZone = 0.01f;     // «стоим»/«идём»
+    public float aimDeadZone = 0.01f;
     public float weaponAngleOffsetDeg = 0f;
 
     [Header("Collision masks")]
-    public LayerMask blockMask;           // стены/препятствия (для пули)
+    public LayerMask blockMask; // стены/препятствия для пули
 
     [Header("Debug")]
     public bool debugDraw = false;
 
-    float cooldown;
-    PlayerMove2D owner;
-    Rigidbody2D rb;
-    SpriteRenderer bodySR, weaponSR;
-    Vector2 lastAimDir = Vector2.right;
+    private float cooldown;
+    private PlayerMove2D owner;
+    private Rigidbody2D rb;
+    private SpriteRenderer bodySR, weaponSR;
+    private Vector2 lastAimDir = Vector2.right;
 
     void Awake()
     {
@@ -41,85 +44,99 @@ public class AutoShooter2D : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         bodySR = GetComponent<SpriteRenderer>();
         if (weaponPivot) weaponSR = weaponPivot.GetComponent<SpriteRenderer>();
-        if (muzzle) muzzleLocalRight = muzzle.localPosition;
+        if (muzzle) muzzleLocalRight = muzzle.localPosition; // базовая «правая» локальная точка дула
+    }
+
+    // обновляем «липкую» сторону, только если явно ушли от нуля по X
+    private void UpdateFace(float desiredX)
+    {
+        if (Mathf.Abs(desiredX) > flipHysteresisX)
+            faceSign = (desiredX >= 0f) ? 1 : -1;
     }
 
     void Update()
     {
         cooldown -= Time.deltaTime;
 
-        // --- 1) цель
+        // 1) цель (может отсутствовать)
         Transform target = GetNearest(Physics2D.OverlapCircleAll(transform.position, range, enemyMask));
         bool hasTarget = target != null;
 
-        // --- 2) направление прицеливания
+        // 2) направление прицеливания и сторона тела
         Vector2 aimDir;
         if (hasTarget)
         {
             Vector2 pivotPos = weaponPivot ? (Vector2)weaponPivot.position : (Vector2)transform.position;
             aimDir = ((Vector2)target.position - pivotPos);
             if (aimDir.sqrMagnitude < 0.0001f) aimDir = lastAimDir; else aimDir.Normalize();
-            owner?.SetAimFacing(aimDir.x); // тело — по стрельбе
+
+            UpdateFace(aimDir.x);            // липкая сторона по цели
+            owner?.SetAimFacing(faceSign);   // тело смотрит по стрельбе (липко)
         }
         else
         {
-            owner?.SetAimFacing(0f);      // тело — по движению
+            owner?.SetAimFacing(0f);         // без цели — тело по движению
             float vx = rb ? rb.linearVelocity.x : 0f;
-            if (Mathf.Abs(vx) >= aimDeadZone) aimDir = (vx > 0f) ? Vector2.right : Vector2.left;
-            else aimDir = (bodySR && bodySR.flipX) ? Vector2.left : Vector2.right;
+            UpdateFace(vx);
+
+            if (Mathf.Abs(vx) >= aimDeadZone)
+                aimDir = vx > 0f ? Vector2.right : Vector2.left;
+            else
+                aimDir = (bodySR && bodySR.flipX) ? Vector2.left : Vector2.right;
         }
 
-        // --- 3) поворот оружия и зеркалирование целиком (чтобы Muzzle не «уезжал»)
+        // 3) поворот оружия (только вращение)
         if (weaponPivot)
         {
             Vector2 dir = (aimDir.sqrMagnitude > 0.0001f) ? aimDir : Vector2.right;
             Quaternion toAim = Quaternion.FromToRotation(Vector3.right, new Vector3(dir.x, dir.y, 0f));
-            weaponPivot.rotation = toAim * Quaternion.Euler(0f, 0f, weaponAngleOffsetDeg);
+            Quaternion offset = Quaternion.Euler(0f, 0f, weaponAngleOffsetDeg);
+            weaponPivot.rotation = toAim * offset;
 
-            bool left = hasTarget && aimDir.x < 0f;
-            weaponPivot.localScale = new Vector3(1f, left ? -1f : 1f, 1f);
+            // ВАЖНО: флип pivot'а по Y разрешаем ТОЛЬКО когда:
+            //   1) есть цель (идёт атака) И
+            //   2) тело уже реально повернулось влево (bodySR.flipX == true)
+            bool bodyLeft = bodySR ? bodySR.flipX : (faceSign < 0);
+            bool leftShootVisual = hasTarget && bodyLeft;
 
-            if (weaponSR) weaponSR.flipX = false; // перестраховка
+            weaponPivot.localScale = new Vector3(1f, leftShootVisual ? -1f : 1f, 1f);
+
+            if (weaponSR) { weaponSR.flipX = false; weaponSR.flipY = false; } // спрайтовые флипы не используем
             if (muzzle)
             {
-                muzzle.localPosition = muzzleLocalRight;     // базовая точка (зеркало сделает остальное)
+                muzzle.localPosition = muzzleLocalRight;     // дуло всегда в «правой» локальной точке
                 muzzle.localRotation = Quaternion.identity;
             }
         }
 
         lastAimDir = aimDir;
 
-        if (target && bodySR) // есть цель и есть рендер тела
+        // 3.5) Гейт: сначала тело развернётся к цели, потом стреляем
+        if (hasTarget && bodySR)
         {
-            bool wantLeft = (aimDir.x < 0f);   // куда нам НУЖНО смотреть
-            bool bodyLeft = bodySR.flipX;      // куда тело СЕЙЧАС смотрит
-
+            bool wantLeft = (faceSign < 0);   // «куда нужно» по логике прицеливания
+            bool bodyLeft = bodySR.flipX;     // «куда сейчас смотрит тело»
             if (bodyLeft != wantLeft)
-            {
-                // Мы уже попросили PlayerMove2D развернуться (через SetAimFacing),
-                // но разворот применится после этого Update. Ждём следующий кадр.
-                return;
-            }
+                return; // ждём кадр, пока PlayerMove2D применит разворот
         }
-        // --- 4) стрельба только при наличии цели
+
+        // 4) Стрельба
         if (!hasTarget || !muzzle || !bulletPrefab) return;
 
         if (cooldown <= 0f)
         {
             cooldown = 60f / Mathf.Max(1f, rpm);
 
-            // итоговое направление выстрела с разбросом
             Vector2 shootDir = weaponPivot ? (Vector2)weaponPivot.right : Vector2.right;
             float spread = Random.Range(-spreadDeg * 0.5f, spreadDeg * 0.5f);
             shootDir = Quaternion.Euler(0f, 0f, spread) * shootDir;
 
-            // спавним пулю
             GameObject go = Instantiate(bulletPrefab, muzzle.position, Quaternion.identity);
             var b = go.GetComponent<Bullet2D>();
             if (b)
             {
                 b.lifeTime = bulletLifeTime;
-                b.Init(shootDir, bulletSpeed, damage, 0.5f, enemyMask, blockMask); // стан = 0.5с
+                b.Init(shootDir, bulletSpeed, damage, 0.5f, enemyMask, blockMask); // стан 0.5с
             }
 
             if (debugDraw)
