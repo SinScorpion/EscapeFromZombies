@@ -371,10 +371,17 @@ MonoBehaviour:
     m_Bits: 64
   weaponPivot: {fileID: 749503205642075172}
   muzzle: {fileID: 269861105292971381}
-  rpm: 240
+  bulletPrefab: {fileID: 3326406409767555056, guid: 3fe576b0f827aa24788a21c81c7c9bda, type: 3}
+  rpm: 90
   damage: 1
+  bulletSpeed: 12
+  bulletLifeTime: 2
+  spreadDeg: 5
   aimDeadZone: 0.01
   weaponAngleOffsetDeg: 0
+  blockMask:
+    serializedVersion: 2
+    m_Bits: 256
   debugDraw: 1
 --- !u!114 &2309618948437196611
 MonoBehaviour:

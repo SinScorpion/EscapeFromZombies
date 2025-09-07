@@ -78,6 +78,7 @@ GameObject:
   - component: {fileID: 2519147648119331229}
   - component: {fileID: 8588353751794970856}
   - component: {fileID: 3934719408983855906}
+  - component: {fileID: 134534810185667887}
   - component: {fileID: 6865857805647127040}
   m_Layer: 6
   m_Name: Zombie
@@ -263,6 +264,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZombieTouchDamage2D
   dps: 2
+--- !u!114 &134534810185667887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8480784529946185162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d014e2b07f8036641a82a76708d3fb15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieStun2D
+  remaining: 0
 --- !u!70 &6865857805647127040
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
