@@ -1,9 +1,12 @@
 ﻿using UnityEngine;
+using Lean.Pool;
 
 public class AutoShooter2D : MonoBehaviour
 {
-    [SerializeField] private float flipHysteresisX = 0.15f; // порог по |x| для смены стороны (липкость)
-    private int faceSign = 1; // 1 = вправо, -1 = влево (липкая сторона)
+    [Header("Flip")]
+    [SerializeField] private float flipHysteresisX = 0.15f; // порог по |x| для смены стороны
+    private int faceSign = 1;                                // 1 = вправо, -1 = влево
+    private Vector2 lastAimDir = Vector2.right;
 
     [Header("Targeting")]
     public float range = 6f;
@@ -12,10 +15,14 @@ public class AutoShooter2D : MonoBehaviour
     [Header("Weapon nodes")]
     public Transform weaponPivot;   // Player/WeaponPivot
     public Transform muzzle;        // Player/WeaponPivot/Muzzle
+    public float weaponAngleOffsetDeg = 0f;
     private Vector3 muzzleLocalRight;
+    private SpriteRenderer bodySR, weaponSR;
+    private Rigidbody2D rb;
+    private PlayerMove2D owner;
 
     [Header("Fire (пули)")]
-    public GameObject bulletPrefab;
+    public GameObject bulletPrefab;   // префаб из пула
     public float rpm = 240f;
     public float damage = 1f;
     public float bulletSpeed = 12f;
@@ -24,26 +31,20 @@ public class AutoShooter2D : MonoBehaviour
 
     [Header("Tuning")]
     public float aimDeadZone = 0.01f;
-    public float weaponAngleOffsetDeg = 0f;
 
     [Header("Collision masks")]
-    public LayerMask blockMask; // стены/препятствия для пули
+    public LayerMask blockMask;       // стены
 
     [Header("Debug")]
     public bool debugDraw = false;
 
-    // ------- SFX -------
     [Header("SFX")]
-    public AudioSource sfxSource;            // перетащи сюда AudioSource с WeaponPivot
-    public AudioClip[] shotClips;            // можно 1 или несколько клипов
+    public AudioSource sfxSource;     // AudioSource на WeaponPivot
+    public AudioClip[] shotClips;
     [Range(0f, 1f)] public float shotVolume = 0.85f;
     public Vector2 pitchJitter = new Vector2(0.97f, 1.03f);
 
     private float cooldown;
-    private PlayerMove2D owner;
-    private Rigidbody2D rb;
-    private SpriteRenderer bodySR, weaponSR;
-    private Vector2 lastAimDir = Vector2.right;
 
     void Awake()
     {
@@ -52,38 +53,38 @@ public class AutoShooter2D : MonoBehaviour
         bodySR = GetComponent<SpriteRenderer>();
         if (weaponPivot) weaponSR = weaponPivot.GetComponent<SpriteRenderer>();
         if (!sfxSource && weaponPivot) sfxSource = weaponPivot.GetComponent<AudioSource>();
-        if (muzzle) muzzleLocalRight = muzzle.localPosition; // базовая «правая» локальная точка дула
+        if (muzzle) muzzleLocalRight = muzzle.localPosition;
     }
 
-    // обновляем «липкую» сторону, только если явно ушли от нуля по X
-    private void UpdateFace(float desiredX)
+    void UpdateFace(float desiredX)
     {
         if (Mathf.Abs(desiredX) > flipHysteresisX)
-            faceSign = (desiredX >= 0f) ? 1 : -1;
+            faceSign = desiredX >= 0f ? 1 : -1;
     }
 
     void Update()
     {
         cooldown -= Time.deltaTime;
 
-        // 1) цель (может отсутствовать)
-        Transform target = GetNearest(Physics2D.OverlapCircleAll(transform.position, range, enemyMask));
+        // --- цель
+        var hits = Physics2D.OverlapCircleAll(transform.position, range, enemyMask);
+        Transform target = GetNearest(hits);
         bool hasTarget = target != null;
 
-        // 2) направление прицеливания и сторона тела
+        // --- направление прицеливания + сторона тела
         Vector2 aimDir;
         if (hasTarget)
         {
-            Vector2 pivotPos = weaponPivot ? (Vector2)weaponPivot.position : (Vector2)transform.position;
-            aimDir = ((Vector2)target.position - pivotPos);
+            Vector2 from = weaponPivot ? (Vector2)weaponPivot.position : (Vector2)transform.position;
+            aimDir = ((Vector2)target.position - from);
             if (aimDir.sqrMagnitude < 0.0001f) aimDir = lastAimDir; else aimDir.Normalize();
 
-            UpdateFace(aimDir.x);            // липкая сторона по цели
-            owner?.SetAimFacing(faceSign);   // тело смотрит по стрельбе (липко)
+            UpdateFace(aimDir.x);           // липкая сторона «по цели»
+            owner?.SetAimFacing(faceSign);  // тело смотрит туда же
         }
         else
         {
-            owner?.SetAimFacing(0f);         // без цели — тело по движению
+            owner?.SetAimFacing(0f);        // без цели — телом рулит движение
             float vx = rb ? rb.linearVelocity.x : 0f;
             UpdateFace(vx);
 
@@ -93,72 +94,69 @@ public class AutoShooter2D : MonoBehaviour
                 aimDir = (bodySR && bodySR.flipX) ? Vector2.left : Vector2.right;
         }
 
-        // 3) поворот оружия (только вращение)
+        // --- поворот оружия
         if (weaponPivot)
         {
-            Vector2 dir = (aimDir.sqrMagnitude > 0.0001f) ? aimDir : Vector2.right;
-            Quaternion toAim = Quaternion.FromToRotation(Vector3.right, new Vector3(dir.x, dir.y, 0f));
-            Quaternion offset = Quaternion.Euler(0f, 0f, weaponAngleOffsetDeg);
+            Vector2 dir = aimDir.sqrMagnitude > 0.0001f ? aimDir : Vector2.right;
+            var toAim = Quaternion.FromToRotation(Vector3.right, new Vector3(dir.x, dir.y, 0f));
+            var offset = Quaternion.Euler(0f, 0f, weaponAngleOffsetDeg);
             weaponPivot.rotation = toAim * offset;
 
-            // флип pivot'а по Y разрешаем ТОЛЬКО когда:
-            //   1) есть цель (идёт атака) И
-            //   2) тело уже реально повернулось влево (bodySR.flipX == true)
+            // флип спрайта оружия по Y только когда есть цель И тело реально развернулось влево
             bool bodyLeft = bodySR ? bodySR.flipX : (faceSign < 0);
             bool leftShootVisual = hasTarget && bodyLeft;
-
             weaponPivot.localScale = new Vector3(1f, leftShootVisual ? -1f : 1f, 1f);
 
-            if (weaponSR) { weaponSR.flipX = false; weaponSR.flipY = false; } // спрайтовые флипы не используем
+            if (weaponSR) { weaponSR.flipX = false; weaponSR.flipY = false; }
             if (muzzle)
             {
-                muzzle.localPosition = muzzleLocalRight;     // дуло всегда в «правой» локальной точке
+                muzzle.localPosition = muzzleLocalRight;       // фиксированная локальная точка
                 muzzle.localRotation = Quaternion.identity;
             }
         }
 
         lastAimDir = aimDir;
 
-        // 3.5) Гейт: сначала тело развернётся к цели, потом стреляем
+        // --- гейт: сначала повернуть тело, потом стрелять
         if (hasTarget && bodySR)
         {
-            bool wantLeft = (faceSign < 0);   // «куда нужно» по логике прицеливания
-            bool bodyLeft = bodySR.flipX;     // «куда сейчас смотрит тело»
-            if (bodyLeft != wantLeft)
-                return; // ждём кадр, пока PlayerMove2D применит разворот
+            bool wantLeft = (faceSign < 0);
+            if (bodySR.flipX != wantLeft) return;
         }
 
-        // 4) Стрельба
+        // --- стрельба (через пул)
         if (!hasTarget || !muzzle || !bulletPrefab) return;
+        if (cooldown > 0f) { if (debugDraw) DebugDrawIdle(); return; }
 
-        if (cooldown <= 0f)
+        cooldown = 60f / Mathf.Max(1f, rpm);
+
+        Vector2 shootDir = weaponPivot ? (Vector2)weaponPivot.right : Vector2.right;
+        float spread = Random.Range(-spreadDeg * 0.5f, spreadDeg * 0.5f);
+        shootDir = Quaternion.Euler(0f, 0f, spread) * shootDir;
+
+        var rot = Quaternion.FromToRotation(Vector3.right, new Vector3(shootDir.x, shootDir.y, 0f));
+        GameObject go = LeanPool.Spawn(bulletPrefab, muzzle.position, rot);
+        var b = go.GetComponent<Bullet2D>();
+        if (b)
         {
-            cooldown = 60f / Mathf.Max(1f, rpm);
-
-            Vector2 shootDir = weaponPivot ? (Vector2)weaponPivot.right : Vector2.right;
-            float spread = Random.Range(-spreadDeg * 0.5f, spreadDeg * 0.5f);
-            shootDir = Quaternion.Euler(0f, 0f, spread) * shootDir;
-
-            GameObject go = Instantiate(bulletPrefab, muzzle.position, Quaternion.identity);
-            var b = go.GetComponent<Bullet2D>();
-            if (b)
-            {
-                b.lifeTime = bulletLifeTime;
-                b.Init(shootDir, bulletSpeed, damage, 0.5f, enemyMask, blockMask); // стан 0.5с (подберём)
-            }
-
-            PlayShotSfx(); // <<<<<<<<<<<<<< ВОТ ЗДЕСЬ ВОСПРОИЗВОДИМ ЗВУК
-
-            if (debugDraw)
-                Debug.DrawLine(muzzle.position, muzzle.position + (Vector3)shootDir * 2f, Color.yellow, 0.05f);
+            b.lifeTime = bulletLifeTime;
+            // берём stunSeconds из самого префаба, чтобы совпадало с инспектором
+            b.Init(shootDir, bulletSpeed, damage, b.stunSeconds, enemyMask, blockMask);
         }
-        else if (debugDraw && muzzle && weaponPivot)
-        {
-            Debug.DrawLine(muzzle.position, muzzle.position + (Vector3)weaponPivot.right * 1.5f, Color.yellow, 0.02f);
-        }
+
+        PlayShotSfx();
+
+        if (debugDraw)
+            Debug.DrawLine(muzzle.position, muzzle.position + (Vector3)shootDir * 2f, Color.yellow, 0.05f);
     }
 
-    private void PlayShotSfx()
+    void DebugDrawIdle()
+    {
+        if (muzzle && weaponPivot)
+            Debug.DrawLine(muzzle.position, muzzle.position + (Vector3)weaponPivot.right * 1.5f, Color.yellow, 0.02f);
+    }
+
+    void PlayShotSfx()
     {
         if (!sfxSource || shotClips == null || shotClips.Length == 0) return;
         sfxSource.pitch = Random.Range(pitchJitter.x, pitchJitter.y);

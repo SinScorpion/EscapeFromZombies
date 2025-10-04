@@ -144,7 +144,7 @@ MonoBehaviour:
   speed: 25
   lifeTime: 3
   damage: 1
-  stunSeconds: 4.5
+  stunSeconds: 0.5
   hitMask:
     serializedVersion: 2
     m_Bits: 64
